@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Intelligence</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+<div class="app-container">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-text">DocIntel</div>
+                <div class="logo-subtitle">Document Intelligence</div>
+            </div>
+
+            <button class="theme-toggle" onclick="toggleDark()">
+                <span class="theme-icon light">☀️</span>
+                <span class="theme-icon dark">🌙</span>
+            </button>
+        </div>
+
+        <!-- Upload -->
+        <div class="upload-section">
+            <div class="section-label">Add Document</div>
+            <form action="/upload" method="post" enctype="multipart/form-data">
+                <label class="file-input-wrapper">
+                    <input type="file" name="file" accept=".pdf,.txt" required onchange="this.form.submit()">
+                    <div class="file-input-content">
+                        📤 Choose file to upload
+                    </div>
+                </label>
+            </form>
+        </div>
+
+        <!-- New Session Button -->
+        <div class="new-session-section">
+            <a href="/new-session" class="new-session-btn" onclick="return confirm('Are you sure you want to start a new session? This will delete all documents and progress.');">
+                ✨ New Session
+            </a>
+        </div>
+
+        <!-- Active Document -->
+        {% if doc_name %}
+        <div class="current-doc">
+            <div class="section-label">Active Document</div>
+            <div class="active-doc-card">
+                <div class="doc-icon">📄</div>
+                <div class="doc-details">
+                    <div class="doc-title">{{ doc_name }}</div>
+                    <div class="doc-status">
+                        Ready for queries
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Document Library -->
+        {% if documents %}
+        <div class="document-library">
+            <div class="section-label">Document Library</div>
+            <ul class="doc-list">
+                {% for doc in documents %}
+                <li class="doc-list-item {% if doc.name == doc_name %}active{% endif %}">
+                    <a href="/select/{{ doc.name }}" class="doc-link">
+                        <span>{% if doc.name.endswith('.pdf') %}📕{% else %}📝{% endif %}</span>
+                        <span class="doc-item-name">{{ doc.name }}</span>
+                    </a>
+                    <div class="doc-status-indicator">
+                        {% if doc.status == 'indexed' %}
+                            <span class="status-ready">Ready</span>
+                        {% elif doc.status == 'processing' %}
+                            <span class="status-indexing">Indexing...</span>
+                        {% else %}
+                            <span class="status-unindexed">Not Indexed</span>
+                        {% endif %}
+                    </div>
+                    <a href="/delete/{{ doc.name }}" class="delete-doc" onclick="return confirm('Are you sure you want to delete this document?');">
+                        <span class="delete-icon">❌</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <main class="main-content">
+        <header class="main-header">
+            <h1 class="page-title">Ask Your Documents</h1>
+            <p class="page-description">
+                Extract insights and answers from your documents using intelligent search
+            </p>
+        </header>
+
+        <!-- ================= QUERY ================= -->
+        <div class="query-section">
+            <form id="askForm" class="query-form">
+
+                <div class="input-group">
+                    <input
+                        type="text"
+                        name="question"
+                        class="question-input"
+                        placeholder="What would you like to know about your document?"
+                        required
+                    >
+                </div>
+
+                <div class="query-options">
+                    <div class="options-group">
+                        <label class="option-label">
+                            <span class="label-text">Query Mode</span>
+                            <select name="mode" class="select-input">
+                                <option value="quick">⚡ Quick Answer</option>
+                                <option value="detailed">🎓 Detailed Response</option>
+                            </select>
+                        </label>
+
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="bullets" value="yes">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Format as bullet points</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        Ask Question →
+                    </button>
+                </div>
+            </form>
+
+            {% if doc_name %}
+            <div class="suggestions">
+                <div class="suggestions-label">Try asking:</div>
+                <div class="suggestion-chips">
+                    <button class="chip" onclick="fillQuestion('Give me a summary of this document')">
+                        📋 Summarize document
+                    </button>
+                    <button class="chip" onclick="fillQuestion('What are the key points?')">
+                        🎯 Key points
+                    </button>
+                    <button class="chip" onclick="fillQuestion('What is this document about?')">
+                        💡 Main topic
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ================= RESULTS ================= -->
+        <div class="results-section" id="results" style="display:none;">
+            <div class="question-display">
+                <div class="question-label">Your Question</div>
+                <div class="question-text" id="questionText"></div>
+            </div>
+
+            <div class="answer-container">
+                <div class="answer-header">
+                    <div class="answer-label">Answer</div>
+                </div>
+                <div class="answer-content" id="answerContent"></div>
+            </div>
+        </div>
+
+        <!-- Error message -->
+        <div class="error-message" id="errorMessage" style="display:none;">
+            <div class="error-content" id="errorContent"></div>
+        </div>
+
+        {% if not doc_name %}
+        <div class="empty-state">
+            <h2 class="empty-title">No Document Selected</h2>
+            <p class="empty-description">
+                Upload or select a document to begin asking questions.
+            </p>
+        </div>
+        {% endif %}
+    </main>
+</div>
+
+<!-- ================= SCRIPT ================= -->
+<script>
+/* -------- THEME -------- */
+function toggleDark() {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("dark", document.body.classList.contains("dark"));
+}
+if (localStorage.getItem("dark") === "true") {
+    document.body.classList.add("dark");
+}
+
+/* -------- FILL QUESTION -------- */
+function fillQuestion(text) {
+    const input = document.querySelector('.question-input');
+    input.value = text;
+    input.focus();
+}
+
+/* -------- STATE -------- */
+const modeSelect = document.querySelector("select[name='mode']");
+const bulletCheckbox = document.querySelector("input[name='bullets']");
+
+modeSelect.value = localStorage.getItem("query_mode") || "quick";
+bulletCheckbox.checked = localStorage.getItem("bullet_mode") === "yes";
+
+modeSelect.onchange = () =>
+    localStorage.setItem("query_mode", modeSelect.value);
+
+bulletCheckbox.onchange = () =>
+    localStorage.setItem("bullet_mode", bulletCheckbox.checked ? "yes" : "no");
+
+/* -------- AJAX ASK (FIXED) -------- */
+document.getElementById("askForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Hide previous results/errors
+    document.getElementById("results").style.display = "none";
+    document.getElementById("errorMessage").style.display = "none";
+
+    // Show loading state
+    const submitBtn = e.target.querySelector('.submit-btn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '⏳ Processing...';
+    submitBtn.disabled = true;
+
+    const formData = new FormData(e.target);
+
+    try {
+        const res = await fetch("/ask", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await res.json();
+
+        // Reset button
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+
+        // Check for errors
+        if (data.error) {
+            document.getElementById("errorContent").textContent = data.error;
+            document.getElementById("errorMessage").style.display = "block";
+            return;
+        }
+
+        // Display results
+        document.getElementById("results").style.display = "block";
+        document.getElementById("questionText").textContent = data.question;
+
+        const answerBox = document.getElementById("answerContent");
+
+        if (!data.answer || data.answer.length === 0) {
+            answerBox.textContent = "No relevant answer found in the document.";
+            return;
+        }
+
+        answerBox.innerHTML = data.answer;
+
+    } catch (error) {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        
+        document.getElementById("errorContent").textContent = "Failed to get answer: " + error.message;
+        document.getElementById("errorMessage").style.display = "block";
+    }
+});
+</script>
+
+</body>
+</html>
