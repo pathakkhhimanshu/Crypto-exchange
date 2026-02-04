@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>🚀 Crypto Arbitrage Monitor</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-content">
+          <h1>🚀 Live Crypto Arbitrage Monitor</h1>
+          <p class="subtitle">AI-powered cross-exchange opportunity detection</p>
+        </div>
+        <div class="status-indicator">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="status-text">Connecting...</span>
+        </div>
+      </header>
+
+      <!-- Stats Bar -->
+      <section class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-label">Active Opportunities</div>
+          <div class="stat-value" id="opp-count">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Best Spread</div>
+          <div class="stat-value" id="best-spread">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg Confidence</div>
+          <div class="stat-value" id="avg-confidence">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Last Update</div>
+          <div class="stat-value" id="last-update">—</div>
+        </div>
+      </section>
+
+      <!-- Loading Indicator -->
+      <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Loading AI models... (first run: ~60s)</p>
+      </div>
+
+      <!-- Main Table -->
+      <section class="panel">
+        <table id="arb-table">
+          <thead>
+            <tr>
+              <th>
+                Symbol
+                <span class="tooltip" title="Cryptocurrency trading pair">ⓘ</span>
+              </th>
+              <th>
+                Buy Exchange
+                <span class="tooltip" title="Exchange with lower price (where to buy)">ⓘ</span>
+              </th>
+              <th>
+                Sell Exchange
+                <span class="tooltip" title="Exchange with higher price (where to sell)">ⓘ</span>
+              </th>
+              <th>
+                Raw Spread (bps)
+                <span class="tooltip" title="Price difference in basis points (1 bps = 0.01%)">ⓘ</span>
+              </th>
+              <th>
+                Net Spread (bps)
+                <span class="tooltip" title="Profit after fees and latency penalties">ⓘ</span>
+              </th>
+              <th>
+                AI Confidence
+                <span class="tooltip" title="ML model confidence score (0-1): trend + sentiment + anomaly detection">ⓘ</span>
+              </th>
+              <th>
+                Profit/BTC
+                <span class="tooltip" title="Estimated profit per 1 BTC traded">ⓘ</span>
+              </th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="empty-state">
+              <td colspan="8">
+                <div class="empty-message">
+                  <span class="empty-icon">📊</span>
+                  <p>No arbitrage opportunities detected</p>
+                  <small>System scans every 2 seconds...</small>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Footer Info -->
+      <footer class="footer">
+        <p>
+          💡 <strong>How it works:</strong> 
+          System compares prices across Binance, Coinbase, and Kraken. 
+          AI models analyze trends, sentiment, and anomalies to score opportunity quality.
+        </p>
+        <p class="muted">
+          Basis Points (bps): 100 bps = 1% | 
+          Confidence: ML ensemble score (volatility + forecast + anomaly + sentiment)
+        </p>
+      </footer>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
