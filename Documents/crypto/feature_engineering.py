@@ -3,9 +3,7 @@ from __future__ import annotations
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Deque, Dict, Iterable, List, Tuple
-
-import pandas as pd
+from typing import Deque, Dict, Iterable, List, Optional, Tuple
 
 @dataclass(frozen=True)
 class NormalizedTick:
@@ -33,19 +31,6 @@ def normalize_ticks(ticks: Iterable[NormalizedTick]) -> List[NormalizedTick]:
     return normalized
 
 
-def to_frame(ticks: Iterable[NormalizedTick]) -> pd.DataFrame:
-    rows = [
-        {
-            "exchange": tick.exchange,
-            "symbol": tick.symbol,
-            "timestamp": tick.timestamp,
-            "price": tick.price,
-        }
-        for tick in ticks
-    ]
-    return pd.DataFrame(rows)
-
-
 class RollingWindowStore:
     def __init__(self, window_seconds: int) -> None:
         self._window_seconds = window_seconds
@@ -55,6 +40,9 @@ class RollingWindowStore:
         for tick in ticks:
             key = (tick.exchange, tick.symbol)
             bucket = self._data[key]
+            if bucket and tick.timestamp < bucket[-1].timestamp:
+                # Reject out-of-order ticks to preserve temporal integrity
+                continue
             bucket.append(tick)
             self._trim(bucket)
 
@@ -63,13 +51,20 @@ class RollingWindowStore:
         bucket = self._data.get(key, deque())
         return list(bucket)
 
-    def latest_by_symbol(self, symbol: str) -> Dict[str, NormalizedTick]:
+    def latest_by_symbol(
+        self, symbol: str, now: datetime, max_age_seconds: Optional[int] = None
+    ) -> Dict[str, NormalizedTick]:
         result: Dict[str, NormalizedTick] = {}
         symbol = normalize_symbol(symbol)
         for (exchange, sym), bucket in self._data.items():
             if sym != symbol or not bucket:
                 continue
-            result[exchange] = bucket[-1]
+            latest = bucket[-1]
+            if max_age_seconds is not None:
+                age_seconds = (now - latest.timestamp).total_seconds()
+                if age_seconds > max_age_seconds:
+                    continue
+            result[exchange] = latest
         return result
 
     def _trim(self, bucket: Deque[NormalizedTick]) -> None:
