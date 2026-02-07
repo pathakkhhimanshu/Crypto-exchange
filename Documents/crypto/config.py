@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 
 @dataclass(frozen=True)
@@ -14,23 +14,15 @@ class ExchangeConfig:
 
 
 @dataclass(frozen=True)
-class ModelConfig:
-    sentiment_model_id: str = "ProsusAI/finbert"
-    trend_model_id: str = "huggingface/time-series-transformer-tourism-monthly"
-    anomaly_model_id: str = "ibm-research/patchtst-etth1-pretrain"
-    device: str = "cpu"
-    max_length: int = 256
-
-
-@dataclass(frozen=True)
 class EngineConfig:
     symbols: List[str] = field(
         default_factory=lambda: ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT"]
     )
     window_seconds: int = 120
-    min_points: int = 16
+    refresh_interval_seconds: int = 2
+    max_tick_age_seconds: int = 5
+    max_timestamp_drift_seconds: int = 2
     spread_threshold_bps: float = 15.0
     max_latency_penalty_bps: float = 50.0
-    anomaly_threshold: float = 2.5
+    drift_penalty_bps_per_ms: float = 0.002
     exchanges: Dict[str, ExchangeConfig] = field(default_factory=dict)
-    models: ModelConfig = field(default_factory=ModelConfig)
